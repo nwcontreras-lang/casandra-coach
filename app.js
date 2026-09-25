@@ -88,7 +88,7 @@
   function defaultProfile() {
     const eq = {};
     EQUIPMENT.forEach(function (e) { eq[e.id] = e.def; });
-    return { name: "Casandra", trainingDays: 3, equipment: eq, bowWeight: 35 };
+    return { name: "Casandra", age: 37, trainingDays: 3, equipment: eq, bowType: "Compound", bowWeight: 35 };
   }
   let profile = Object.assign(defaultProfile(), load(KEYS.profile, defaultProfile));
   profile.equipment = Object.assign(defaultProfile().equipment, profile.equipment || {});
@@ -97,9 +97,9 @@
 
   // ——— Levels (one per path) ———
   const PILLARS = {
-    run: { name: "Running", max: 20 },
+    run: { name: "Running", max: 27 },
     strength: { name: "General strength", max: 12 },
-    hike: { name: "Hiking", max: 14 },
+    hike: { name: "Hiking", max: 17 },
     bow: { name: "Bow strength (back and shoulders)", max: 12 },
   };
   function defaultLevels() {
@@ -132,7 +132,6 @@
     { id: "ytw", label: "Y-T-W raises", unit: "reps", hint: "Smooth reps for each letter." },
     { id: "plank", label: "Plank hold", unit: "sec", hint: "Seconds holding a plank with good form (note if it was on your knees)." },
     { id: "sideplank", label: "Side plank hold", unit: "sec", hint: "Seconds on each side with good form." },
-    { id: "bowhold", label: "Controlled hold on your bow", unit: "sec", hint: "Seconds held at full draw before letting down slowly." },
   ];
   function metric(id) { return METRICS.find(function (m) { return m.id === id; }); }
   function metricEntries(id) { return (records[id] || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.ts - b.ts; }); }
@@ -178,36 +177,48 @@
   // log: "reps" (count reps), "weight" (weight + reps), "hold" (seconds), "carry" (weight + seconds), "check" (just tick it off)
   const EX = {
     // Legs and hips
-    chairSquat: { name: "Chair squat", log: "reps", bw: true,
-      how: "Stand in front of a sturdy chair or the bench with your feet about hip-width apart. Sit back and down until you lightly touch the seat, then stand up tall by pushing the floor away.",
-      feel: "Your thighs and bottom are working, and you can breathe normally the whole time.",
-      easier: "Use a higher seat, or hold the rack upright lightly for balance." },
-    bwSquat: { name: "Bodyweight squat", log: "reps", bw: true,
-      how: "Feet a little wider than your hips, toes turned out slightly. Sit your hips back and down like you're sitting into a chair, keeping your chest proud, then stand up tall.",
-      feel: "Thighs and bottom working. Knees follow the direction of your toes.",
-      easier: "Go back to the chair squat so you have a target to sit to." },
-    gobletSquat: { name: "Goblet squat with one 25 lb dumbbell", log: "weight",
-      how: "Hold one end of the dumbbell against your chest with both hands. Sit down between your heels, keeping your elbows inside your knees, then stand up tall.",
-      feel: "Legs and bottom working hard for the last 2 or 3 reps, but your form stays smooth.",
-      easier: "Do bodyweight squats, or squat to the bench while holding the dumbbell." },
-    gobletSquatLight: { name: "Goblet squat with a light dumbbell", log: "weight",
-      how: "Hold one light dumbbell at your chest with both hands. Sit down between your heels with your chest up, then stand tall.",
-      feel: "A little harder than bodyweight squats, still smooth and controlled.",
-      easier: "Do bodyweight squats instead." },
-    pauseSquat: { name: "Pause squat (bodyweight)", log: "reps", bw: true,
-      how: "Do a bodyweight squat, and hold still at the bottom for 2 seconds before standing up.",
-      feel: "The pause makes your legs work harder without any weight.",
-      easier: "Skip the pause, or squat to a chair." },
+    boxSquat: { name: "Box squat to the bench", log: "reps", bw: true,
+      how: "Stand in front of the bench (or a sturdy box) that's about knee height or a little higher, feet hip-width apart. Sit back and down until you lightly touch the seat, then stand up tall by pushing the floor away. Your thighs should stay level with the floor or higher at the bottom.",
+      feel: "Thighs and bottom working, and your hips feeling comfortable the whole way. A pinch in the front of the hip means the box is too low today.",
+      easier: "Make the seat higher by stacking a firm cushion or folded mat on the bench, or hold the rack upright lightly for balance." },
+    boxSquatSlow: { name: "Box squat with a slow lower", log: "reps", bw: true,
+      how: "Same box at knee height or a little higher. Take 3 slow seconds to lower yourself until you lightly touch the seat, then stand up tall at a normal speed.",
+      feel: "The slow lowering makes your legs work harder without going any deeper. Hips stay comfortable.",
+      easier: "Lower at a normal speed, or raise the box." },
+    boxSquatDB: { name: "Box squat holding one 25 lb dumbbell at your chest", log: "weight",
+      how: "Hold one end of a dumbbell against your chest with both hands. Sit back to the bench or box (knee height or a little higher), lightly touch it, then stand up tall. Keep the same box height; add reps before anything else.",
+      feel: "Legs and bottom working for the last 2 or 3 reps, hips comfortable. Your thighs never go below level with the floor.",
+      easier: "Put the dumbbell down and do the box squat with your body weight." },
+    boxSquatLight: { name: "Box squat holding a light dumbbell", log: "weight",
+      how: "Hold one light dumbbell at your chest. Sit back to the bench or box (knee height or a little higher), lightly touch it, and stand tall.",
+      feel: "A little harder than bodyweight, hips comfortable.",
+      easier: "Do the box squat with no weight." },
     gluteBridge: { name: "Glute bridge", log: "reps", bw: true,
       how: "Lie on your back with your knees bent and feet flat. Squeeze your bottom and lift your hips until your body makes a straight line from knees to shoulders. Pause for a second, then lower slowly.",
       feel: "The squeeze is in your bottom, not your lower back.",
       easier: "Lift your hips only halfway." },
+    singleLegBridge: { name: "Single-leg glute bridge", log: "reps", bw: true,
+      how: "Lie on your back with knees bent and feet flat. Straighten one leg out in line with the other thigh (or just lift that foot an inch off the floor). Push through the planted foot to lift your hips, pause, and lower slowly. Do all reps on one side, then switch.",
+      feel: "The bottom of the working side doing the job, hips level, nothing pinching.",
+      easier: "Keep both feet down and just put more weight through one foot." },
+    clamshell: { name: "Side-lying clamshell", log: "reps", bw: true,
+      how: "Lie on your side with your hips and knees gently bent and your heels together, head resting on your arm. Keeping your feet touching, lift your top knee a few inches like a clamshell opening, then lower slowly. Don't let your top hip roll backward.",
+      feel: "A warm, working feeling in the side of your bottom (the muscles that keep hips steady when you run and hike).",
+      easier: "Open only a little way, or do fewer reps." },
+    sideHipRaise: { name: "Side-lying hip raise (leg lift)", log: "reps", bw: true,
+      how: "Lie on your side with the bottom knee bent for balance and the top leg straight, in line with your body. With your toes pointing forward, lift the top leg about a foot, pause, and lower slowly. Keep your hips stacked; don't roll back.",
+      feel: "The side of your hip and bottom working, not the front of your hip.",
+      easier: "Lift it a smaller distance." },
+    hipHike: { name: "Standing hip hike on a step", log: "reps", bw: true,
+      how: "Stand sideways on the bottom stair or a low step with one foot on it and the other foot hanging just off the edge, holding the rack or a railing. Keeping both knees straight, let the hanging foot drop an inch or two, then lift it back up by hiking that hip. Do all reps on one side, then switch.",
+      feel: "The side of the hip on the standing leg working. It's a small movement.",
+      easier: "Do it standing on flat ground, just lifting one foot slightly by hiking the hip." },
     hipHinge: { name: "Hip hinge practice", log: "reps", bw: true,
       how: "Stand tall with hands on your hips and a soft bend in your knees. Push your hips back like closing a car door with your bottom, letting your chest tip forward with a flat back, then stand up by squeezing your bottom.",
       feel: "A gentle stretch in the back of your thighs. Your back stays flat, not rounded.",
       easier: "Stand a few inches in front of a wall and reach your hips back to touch it." },
     rdlCurl: { name: "Romanian deadlift with the curl bar", log: "weight", weightLabel: "Total lb",
-      how: "Hold the curl bar in front of your thighs. With soft knees and a flat back, slide the bar down your legs by pushing your hips back until you feel a stretch in the back of your thighs, then stand up tall by squeezing your bottom.",
+      how: "Hold the curl bar in front of your thighs. With soft knees and a flat back, slide the bar down your legs by pushing your hips back, only as far as feels comfortable (usually to around your knees), then stand up tall by squeezing your bottom.",
       feel: "A stretch in the back of your thighs on the way down. Your lower back should feel steady, not strained.",
       easier: "Use just the empty curl bar and a smaller range, stopping at your knees." },
     rdlDumbbell: { name: "Romanian deadlift holding one 25 lb dumbbell", log: "weight",
@@ -218,22 +229,26 @@
       how: "Take the barbell from the rack at hip height. Soft knees, flat back, push your hips back and slide the bar down your thighs to just below your knees, then stand up tall.",
       feel: "Hamstrings and bottom working, back steady. The last 2 reps are work but not a struggle.",
       easier: "Go back to the curl bar. An empty barbell is usually 45 lb (some are 35 lb), which is a big jump." },
-    stepUpLow: { name: "Step-up onto a low step", log: "reps", bw: true,
+    stepUpLow: { name: "Step-up onto a low step (6 to 8 inches)", log: "reps", bw: true,
       how: "Use the bottom stair or a sturdy step about 6 to 8 inches high. Step up with one foot, press through that whole foot to stand tall, then step back down slowly. Do all reps on one leg, then switch.",
       feel: "The front leg does the work. This builds your hiking legs.",
       easier: "Hold a railing or the rack for balance." },
-    stepUpHigh: { name: "Step-up onto a higher step", log: "reps", bw: true,
-      how: "Use a sturdy box or step around mid-shin height (the bench only if it's steady and not too tall for you). Press through the front foot to stand all the way up, then lower yourself slowly.",
-      feel: "Front thigh and bottom working. Slow on the way down is where the hiking strength comes from.",
+    stepUpHigh: { name: "Step-up onto a slightly higher step (about 10 inches)", log: "reps", bw: true,
+      how: "Use a sturdy step about 10 inches high (two stairs is often too high; a sturdy box or a stack of firm mats works). Press through the front foot to stand all the way up, then lower yourself slowly. Never use a step so high that your hip pinches.",
+      feel: "Front thigh and bottom working, hip comfortable. Slow on the way down is where the hiking strength comes from.",
       easier: "Go back to the low step." },
     stepUpDB: { name: "Step-up holding one 25 lb dumbbell", log: "weight",
-      how: "Hold a dumbbell at your side, or at your chest with both hands. Step up onto a sturdy step around mid-shin height, stand tall, then step down slowly.",
+      how: "Hold a dumbbell at your side, or at your chest with both hands. Step up onto a sturdy low step (about 8 inches), stand tall, then step down slowly. Add weight before adding height.",
       feel: "Like hiking uphill with a pack. Legs work, balance stays steady.",
       easier: "Do the same step-up with no weight." },
-    splitSquat: { name: "Split squat, holding the rack for balance", log: "reps", bw: true,
-      how: "Stand in a long stride, one foot forward and one back, holding the rack upright lightly. Bend both knees to lower straight down, then push back up. Do all reps on one side, then switch.",
-      feel: "Front thigh and bottom working. Go only as low as feels comfortable.",
-      easier: "Lower only a few inches." },
+    splitSquat: { name: "Short-range split squat, hand on the rack", log: "reps", bw: true,
+      how: "Stand in a long stride, one foot forward and one back, with one hand on the rack upright. Bend both knees to lower straight down only a few inches, then push back up. Do all reps on one side, then switch.",
+      feel: "Front thigh and bottom working, hips comfortable. Depth isn't the goal; control is.",
+      easier: "Lower only an inch or two, or shorten your stride." },
+    reverseLunge: { name: "Reverse lunge, hand on the rack", log: "reps", bw: true,
+      how: "Stand tall with one hand on the rack. Step one foot back and bend both knees to lower a comfortable distance (not all the way to the floor), then push through the front foot to come back to standing. Do all reps on one side, then switch.",
+      feel: "Front leg working, balance steady, hips comfortable.",
+      easier: "Go back to the short-range split squat." },
     calfRaise: { name: "Calf raise", log: "reps", bw: true,
       how: "Stand tall holding the rack or a wall. Rise up onto the balls of your feet, pause for a second, then lower slowly.",
       feel: "A burn in your calves toward the end of the set. Great for running and hiking.",
@@ -374,7 +389,7 @@
       easier: "Use no weight or a soup can." },
     reverseFlyLight: { name: "Bent-over reverse fly with light dumbbells", log: "weight",
       how: "Hinge forward with a flat back, light dumbbells hanging below your chest. With a slight bend in your elbows, raise your arms out to the sides, squeezing your shoulder blades, then lower slowly.",
-      feel: "The backs of your shoulders working, just like when holding a bow at full draw.",
+      feel: "The backs of your shoulders working. These are muscles that help hold a bow steady.",
       easier: "Use lighter weights or do it lying face down on the incline bench." },
     bandPullApart: { name: "Band pull-apart", log: "reps", bw: true,
       how: "Hold a light band at shoulder height with straight arms. Pull it apart by squeezing your shoulder blades until it touches your chest, then return slowly.",
@@ -388,10 +403,6 @@
       how: "Anchor a light band at elbow height. With your elbow bent 90 degrees and tucked against your side, rotate your forearm outward away from your body, then return slowly.",
       feel: "The back of your shoulder working gently.",
       easier: "Step closer to the anchor." },
-    bandDraw: { name: "Band draw practice (light band)", log: "reps", bw: true,
-      how: "Hold a light band in your bow hand with that arm straight out in front. Pull the other end back to your face like drawing a bow, elbow at shoulder height. Hold for 2 seconds, then return slowly. Do both sides so you stay balanced.",
-      feel: "Your upper back doing the work, not just your arm.",
-      easier: "Use a lighter band or hold it with more slack." },
     supportedHang: { name: "Supported hang (toes on a box)", log: "hold", bw: true, record: null,
       how: "Put a sturdy box or step under the pull-up bar. Hold the bar with your hands shoulder-width apart and bend your knees so some of your weight hangs from your arms while your toes stay on the box.",
       feel: "Your grip and shoulders getting used to hanging. Shoulders stay gently engaged, not jammed up by your ears.",
@@ -412,21 +423,17 @@
       how: "Use a box to get your chin above the bar. Lift your feet and lower yourself as slowly as you can, about 3 to 5 seconds, until your arms are straight. Step back up and repeat.",
       feel: "Your back and arms working hard. This builds toward a pull-up.",
       easier: "Do a flexed-arm hang instead." },
-    bowDraw: { name: "Practice draws on your bow", log: "hold", bw: true, record: "bowhold",
-      how: "With an arrow nocked and pointing at a safe backstop (or with no arrow and letting down carefully, never releasing), draw as far as feels controlled, hold briefly, then let the string down slowly. Never release a bow without an arrow; dry firing can damage the bow and hurt you. Log how many seconds you held.",
-      feel: "Your upper back doing the pulling and your shoulders staying down and steady. Stop if your shoulder feels pinchy or shaky.",
-      easier: "Draw only partway, or skip it today and do the rows and hangs." },
 
     // Stretch and easy movement
     easyWalk: { name: "Easy walk", log: "check", how: "Walk at a relaxed pace on the treadmill or outside.", feel: "Easy and comfortable. You could chat the whole time.", easier: "Walk for less time." },
     catCow: { name: "Cat-cow", log: "check", how: "On hands and knees, slowly round your back up toward the ceiling, then let it gently sag as you look forward. Move with your breath.", feel: "Your spine loosening up.", easier: "Make the movement smaller." },
-    childPose: { name: "Child's pose with a side reach", log: "check", how: "Kneel, sit back toward your heels and reach your arms forward on the floor. Walk your hands a little to one side, breathe, then the other side.", feel: "A gentle stretch along your back and sides.", easier: "Put a pillow under your hips or chest." },
-    hipFlexor: { name: "Kneeling hip flexor stretch", log: "check", how: "Kneel on one knee (use a cushion) with the other foot forward. Tuck your hips under slightly and shift forward until you feel a stretch at the front of the back hip. Hold 30 seconds each side.", feel: "A stretch at the front of your hip, never pain.", easier: "Stand in a lunge holding a counter instead of kneeling." },
-    hamStretch: { name: "Hamstring stretch", log: "check", how: "Sit on the edge of a chair or the bench with one leg straight out, heel on the floor. Lean forward from your hips with a flat back. Hold 30 seconds each side.", feel: "A mild stretch in the back of your thigh.", easier: "Bend the knee a little." },
+    hipFlexor: { name: "Half-kneeling hip flexor stretch with a pad", log: "check", how: "Kneel on one knee on a soft pad with the other foot flat in front. Stand tall, gently squeeze the bottom on the kneeling side and tuck your hips under a little. You may feel the stretch without moving forward at all; if not, shift forward only an inch or two. Hold 30 seconds each side.", feel: "A mild stretch at the front of the kneeling-side hip. Stay in a comfortable range; a pinch in the front of the hip means back off.", easier: "Do it standing: hold the rack, step one foot back, and squeeze that side's bottom." },
+    quadStretch: { name: "Standing quad stretch", log: "check", how: "Hold the rack or a wall. Bend one knee and hold that ankle (or your sock or pant leg) behind you, keeping your knees close together and standing tall. Hold 30 seconds each side.", feel: "A gentle stretch in the front of your thigh.", easier: "Loop a towel around your ankle instead of reaching." },
+    hamStretch: { name: "Hamstring stretch with your heel on a low step", log: "check", how: "Stand facing the bottom stair or a low step and put one heel on it with that leg straight. Stand tall and lean forward just a little from your hips with a flat back. Hold 30 seconds each side.", feel: "A mild stretch in the back of your thigh, nothing in the front of the hip.", easier: "Bend the stretching knee slightly or use a lower step." },
     calfStretch: { name: "Calf stretch against a wall", log: "check", how: "Hands on a wall, one foot back with the heel down and the knee straight. Lean in until you feel your calf stretch. Hold 30 seconds each side.", feel: "A gentle stretch in your calf.", easier: "Step the back foot closer to the wall." },
-    figure4: { name: "Figure-four hip stretch", log: "check", how: "Lie on your back, cross one ankle over the opposite knee, and gently pull the bottom leg toward you. Hold 30 seconds each side.", feel: "A stretch in the outside of your hip and bottom.", easier: "Keep the bottom foot on the floor." },
+    hipCircles: { name: "Gentle standing hip circles", log: "check", how: "Hold the rack or a wall. Lift one knee a little (not high) and draw slow, small circles with it, 5 each way, then switch legs. Keep every circle within a comfortable range.", feel: "Your hip loosening up gently. A pinch in the front of the hip means make the circles smaller.", easier: "Make the circles tiny, or just shift your weight side to side." },
     doorwayStretch: { name: "Doorway chest stretch", log: "check", how: "Put your forearm on a door frame with your elbow at shoulder height. Step forward gently until you feel a stretch across your chest. Hold 30 seconds each side.", feel: "Chest and front of the shoulder opening up. Helpful after rows and bow work.", easier: "Put your arm lower on the door frame." },
-    threadNeedle: { name: "Thread-the-needle upper-back stretch", log: "check", how: "On hands and knees, slide one arm under your body along the floor, letting your shoulder and head rest down. Hold for a few breaths, then switch.", feel: "A gentle twist through your upper back.", easier: "Don't reach as far." },
+    thoracicRotation: { name: "Seated upper-back rotation", log: "check", how: "Sit tall on the bench with your feet flat and your arms crossed on your chest. Slowly turn your upper body to one side as far as is comfortable, keeping your hips facing forward, then turn to the other side. 5 slow turns each way.", feel: "A gentle twist through your upper back, not your hips.", easier: "Turn a smaller distance." },
   };
 
   function ex(key, opts) {
@@ -458,16 +465,23 @@
   const RUN_LEVELS = [
     { jog: 0.5, walk: 2, reps: 6 },
     { jog: 1, walk: 2, reps: 6 },
+    { jog: 1, walk: 2, reps: 7 },
     { jog: 1, walk: 1.5, reps: 7 },
+    { jog: 1.5, walk: 2, reps: 6 },
     { jog: 1.5, walk: 1.5, reps: 6 },
     { jog: 2, walk: 2, reps: 5 },
+    { jog: 2, walk: 1.5, reps: 6 },
     { jog: 2.5, walk: 2, reps: 5 },
     { jog: 3, walk: 2, reps: 4 },
+    { jog: 3, walk: 2, reps: 5 },
     { jog: 3, walk: 1.5, reps: 5 },
     { jog: 4, walk: 2, reps: 4 },
+    { jog: 4, walk: 1.5, reps: 4 },
     { jog: 5, walk: 2, reps: 3 },
+    { jog: 5, walk: 2, reps: 4 },
     { jog: 5, walk: 1.5, reps: 4 },
     { jog: 8, walk: 2, reps: 2 },
+    { jog: 8, walk: 2, reps: 3 },
     { jog: 10, walk: 2, reps: 2 },
     { jog: 12, walk: 2, reps: 2 },
     { jog: 15, walk: 2, reps: 2 },
@@ -491,12 +505,15 @@
     { min: 35, incline: 4, pack: 0, where: "gentle" },
     { min: 40, incline: 5, pack: 0, where: "hills" },
     { min: 45, incline: 6, pack: 0, where: "hills" },
-    { min: 45, incline: 6, pack: 5, where: "hills" },
-    { min: 50, incline: 7, pack: 8, where: "hills" },
-    { min: 60, incline: 8, pack: 10, where: "trail" },
-    { min: 75, incline: 8, pack: 12, where: "trail" },
+    { min: 50, incline: 7, pack: 0, where: "hills" },
+    { min: 60, incline: 8, pack: 0, where: "trail" },
+    { min: 60, incline: 8, pack: 5, where: "trail" },
+    { min: 60, incline: 8, pack: 7, where: "trail" },
+    { min: 75, incline: 8, pack: 10, where: "trail" },
+    { min: 75, incline: 10, pack: 12, where: "trail" },
     { min: 90, incline: 10, pack: 15, where: "trail" },
-    { min: 120, incline: 10, pack: 18, where: "trail" },
+    { min: 90, incline: 10, pack: 18, where: "trail" },
+    { min: 120, incline: 10, pack: 20, where: "trail" },
     { min: 150, incline: 12, pack: 20, where: "trail" },
   ];
   function hikeStepText(L) {
@@ -508,18 +525,18 @@
   }
   function strengthStepText(L) {
     return band(L, [
-      "Chair squats, wall push-ups, glute bridges and gentle core",
-      "Chair squats, wall push-ups, glute bridges and gentle core",
-      "Three sets of chair squats, incline push-ups and glute bridges",
-      "Bodyweight squats, incline push-ups and curl-bar Romanian deadlifts",
-      "Bodyweight squats, incline push-ups and curl-bar Romanian deadlifts",
-      "Bodyweight squats, lower incline push-ups and planks",
-      "Goblet squats, higher step-ups and full planks",
-      "Goblet squats, higher step-ups and farmer carries",
-      "Goblet squats, knee push-ups and back extensions",
-      "Weighted step-ups, knee push-ups and longer planks",
-      "Your first full push-ups, weighted step-ups and heavier hinges",
-      "Strong and steady: full push-ups, weighted legs and longer carries",
+      "Box squats to the bench, wall push-ups, glute bridges and side-hip work",
+      "Box squats to the bench, wall push-ups, glute bridges and side-hip work",
+      "Three sets of box squats, incline push-ups and glute bridges",
+      "Slow-lowering box squats, incline push-ups and curl-bar Romanian deadlifts",
+      "Slow-lowering box squats, incline push-ups and side-lying hip raises",
+      "Slow-lowering box squats, lower incline push-ups and single-leg bridges",
+      "Box squats holding a dumbbell, slightly higher step-ups and full planks",
+      "Box squats holding a dumbbell, short-range split squats and farmer carries",
+      "Box squats holding a dumbbell, knee push-ups and back extensions",
+      "Weighted low step-ups, reverse lunges and knee push-ups",
+      "Your first full push-ups, weighted low step-ups and reverse lunges",
+      "Strong and steady: full push-ups, weighted box squats and longer carries",
     ]);
   }
   function bowStepText(L) {
@@ -533,9 +550,9 @@
       "Waist-height rows, scapular pulls and 20-second hangs",
       "Hip-height rows, scapular pulls and 25-second hangs",
       "Hip-height rows, 30-second hangs and flexed-arm holds",
-      "Hip-height rows, flexed-arm holds and longer bow practice",
-      "Slow lowering pull-ups, rows and bow practice",
-      "Slow lowering pull-ups, rows and bow practice",
+      "Hip-height rows, flexed-arm holds and longer hangs",
+      "Slow lowering pull-ups, hip-height rows and curl-bar rows",
+      "Slow lowering pull-ups, strong rows and steady hangs",
     ]);
   }
   function stepText(p, L) {
@@ -547,15 +564,16 @@
 
   // ——— Exercise pickers (level + equipment aware) ———
   function squatItem(L) {
-    if (L <= 3) return ex("chairSquat", { sets: L <= 2 ? 2 : 3, target: band(L, [8, 10, 10]) });
+    // Hip-friendly: always to a box at knee height or higher. Progress with reps, tempo and load, not depth.
+    if (L <= 3) return ex("boxSquat", { sets: L <= 2 ? 2 : 3, target: band(L, [8, 10, 10]) });
     if (L <= 6) {
-      if (eq("lightDumbbells") && L >= 5) return ex("gobletSquatLight", { sets: 3, target: 10 });
-      return ex("bwSquat", { sets: 3, target: band(L - 3, [8, 10, 12]) });
+      if (eq("lightDumbbells") && L >= 5) return ex("boxSquatLight", { sets: 3, target: 10 });
+      return ex("boxSquatSlow", { sets: 3, target: band(L - 3, [8, 10, 10]) });
     }
-    if (eq("dumbbells25")) return ex("gobletSquat", { sets: 3, target: band(L - 6, [8, 10, 12]), weightDefault: 25,
-      tip: L >= 10 ? "When 12 reps feel easy, add a 2-second pause at the bottom of each rep." : "" });
-    if (eq("lightDumbbells")) return ex("gobletSquatLight", { sets: 3, target: 12 });
-    return ex("pauseSquat", { sets: 3, target: 10 });
+    const tip = L >= 10 ? "When 12 reps feel easy, you can lower the box an inch, but never below the point where your thighs are level with the floor." : "Keep the same box height. Add reps before anything else.";
+    if (eq("dumbbells25")) return ex("boxSquatDB", { sets: 3, target: band(L - 6, [8, 10, 12]), weightDefault: 25, tip: tip });
+    if (eq("lightDumbbells")) return ex("boxSquatLight", { sets: 3, target: 12, tip: tip });
+    return ex("boxSquatSlow", { sets: 3, target: 12, tip: tip });
   }
   function hingeItem(L) {
     if (L <= 3) return ex("gluteBridge", { sets: L === 1 ? 2 : 3, target: band(L, [10, 10, 12]) });
@@ -589,11 +607,21 @@
     return ex("stepUpDB", { sets: 3, target: 8, perSide: "on each leg", weightDefault: 25 });
   }
   function legItemB(L) {
-    if (L <= 3) return ex("chairSquat", { sets: 2, target: 8 });
-    return ex("splitSquat", { sets: L >= 9 ? 3 : 2, target: band(L - 3, [6, 8, 8, 10, 10, 10]), perSide: "on each leg" });
+    if (L <= 3) return ex("boxSquat", { sets: 2, target: 8 });
+    if (L <= 9) return ex("splitSquat", { sets: L >= 7 ? 3 : 2, target: band(L - 3, [6, 8, 8, 10, 10, 10]), perSide: "on each leg" });
+    return ex("reverseLunge", { sets: 3, target: band(L - 9, [6, 8, 8]), perSide: "on each leg" });
+  }
+  function sideHipItems(L, full) {
+    // Glute medius / side-hip work for steady hips
+    const out = [];
+    if (L <= 4) out.push(ex("clamshell", { sets: 2, target: band(L, [8, 10, 10, 12]), perSide: "on each side" }));
+    else out.push(ex("sideHipRaise", { sets: 2, target: band(L - 4, [8, 10, 10, 12]), perSide: "on each side" }));
+    if (full && L >= 3) out.push(ex("hipHike", { sets: 2, target: band(L - 2, [8, 10, 12]), perSide: "on each side" }));
+    return out;
   }
   function backItemB(L) {
     if (L <= 3) return ex("hipHinge", { sets: 2, target: 10 });
+    if (L >= 6 && !eq("backExtBench")) return ex("singleLegBridge", { sets: 2, target: band(L - 5, [6, 8, 10]), perSide: "on each side" });
     if (eq("backExtBench")) return ex("backExt", { sets: L <= 5 ? 2 : 3, target: band(L - 3, [8, 10, 10, 10, 12]) });
     return ex("gluteBridge", { sets: 3, target: 12 });
   }
@@ -660,16 +688,15 @@
     if (eq("dumbbells25") && L >= 7) return ex("oneArmRow25", { sets: 2, target: 8, perSide: "on each side", weightDefault: 25 });
     return null;
   }
-  function bowPracticeItem() {
-    const r = readiness();
-    if (!r.unlocked) return null;
-    const L = lvl("bow");
-    const secs = L >= 10 ? 5 : 3;
-    return ex("bowDraw", { sets: 3, target: secs,
-      detail: "3 practice draws, holding each about " + secs + " seconds at a draw length you control, then letting down slowly",
-      tip: "Only do this if it feels steady today. If your bow's draw weight can be adjusted, an archery shop can turn it down for now and check your draw length." });
+  function isCompound() { return (profile.bowType || "Compound") === "Compound"; }
+  function bowWorkoutIntro() {
+    return "These build the pulling strength and shoulder-blade control you'll use to draw your bow.";
   }
-
+  function bowIntro() {
+    return isCompound()
+      ? "Why the training looks like this: with a compound bow, the heaviest pull is the first part of the draw. Once the cams roll over, you hold a much lighter weight at full draw (the let-off). So the training focuses on pulling strength and shoulder-blade control for that first part, plus short, steady holds, not long heavy holds."
+      : "Why the training looks like this: with a recurve, the pull gets heavier the farther you draw, and you hold that full weight at anchor. So the training focuses on pulling strength and shoulder-blade control, plus short, steady holds.";
+  }
   // ——— Readiness toward drawing the bow ———
   function readiness() {
     const target = profile.bowWeight || 35;
@@ -684,16 +711,18 @@
     markers.forEach(function (m) { const f = Math.min(1, m.value / m.target); m.frac = f; sum += f; if (m.value >= m.target) met++; });
     const pct = Math.round((sum / markers.length) * 100);
     let stage;
-    if (met >= 4) stage = "Ready to try full draws, a few at a time";
-    else if (met >= 3) stage = "Almost there: short practice draws are now part of your bow sessions";
+    if (met >= 4) stage = "Your strength markers say you're likely ready";
+    else if (met >= 3) stage = "Almost there: one more marker to go";
     else if (pct >= 40) stage = "Getting stronger";
     else stage = "Building the base";
-    return { markers: markers, pct: pct, met: met, unlocked: met >= 3, stage: stage, target: target };
+    return { markers: markers, pct: pct, met: met, ready: met >= 4, stage: stage, target: target };
   }
 
   // ——— Workout builders ———
   const REST_NOTE = "Rest about a minute between sets, or longer if you need it.";
   const PAIN_NOTE = "If anything hurts sharply (a pinch or a stab, not just muscles working), stop that exercise and skip it today. Feeling a little sore a day or two later is normal.";
+  const PAIN_RULE = "A simple rule: mild discomfort up to about 3 out of 10 that settles by the next morning is okay. Sharp pain, pinching, or pain that's worse the next day means ease back, and if it keeps happening, check with your physical therapist or doctor.";
+  const HIP_RANGE_NOTE = "Stay in a comfortable range; a pinch in the front of the hip means back off.";
 
   function runWorkout(variant) {
     const L = lvl("run");
@@ -748,7 +777,8 @@
       warmup: [],
       blocks: blocks,
       notes: [
-        eq("treadmill") ? "On the treadmill, a 1% incline feels a lot like running outside." : "Pick a flat, safe route for now.",
+        eq("treadmill") ? "Keep the treadmill flat, at 0 to 1% incline, and don't use the decline setting. Outside, pick flat routes and walk any downhills for now." : "Pick a flat, safe route for now, and walk any downhills.",
+        PAIN_RULE,
         "If this felt too hard, it's completely fine to repeat this step next time. Lots of new runners repeat a week or two, and that's how running starts to feel good.",
         PAIN_NOTE,
       ],
@@ -801,9 +831,11 @@
     }
     const notes = [];
     if (h.pack) notes.push("Pack weight idea: a liter of water weighs about 2.2 lb, so " + h.pack + " lb is roughly " + Math.round(h.pack / 2.2) + " liters of water, or water plus a jacket and snacks. Add weight slowly, a few pounds at a time.");
+    if (h.pack) notes.push("Only add pack weight after a comfortable hike at the current weight with your hips feeling fine. If your hips were achy, the app keeps you at this weight.");
+    if (h.incline) notes.push("Downhill is usually harder on hips than uphill. Take downhills slowly with short steps, and use trekking poles if you have them (they help most on the way down)." + (L < 14 ? " Choose routes without long descents for now; longer downhills come at later steps." : "") + (eq("treadmill") ? " On the treadmill, stick to uphill or flat; skip the decline setting." : ""));
     if (h.min >= 60) notes.push("Bring water and a snack, and tell someone your route if you're heading onto a trail.");
     if (L >= 10) notes.push("Every hike like this builds toward multi-day backcountry trips. Comfortable feet and a well-fitted pack matter more than speed.");
-    notes.push(PAIN_NOTE);
+    notes.push(PAIN_RULE);
     return {
       title: title,
       minutes: minutes,
@@ -823,64 +855,61 @@
       return {
         title: "Short full-body strength", minutes: 20, location: "Home",
         why: "A quick full-body session. Two sets of each keeps it short but still counts.",
-        warmup: ["March in place or walk on the treadmill for 2 minutes.", "10 arm circles forward and 10 backward."],
+        warmup: ["March in place or walk on the treadmill for 2 minutes.", "10 arm circles forward and 10 backward.", "8 side-lying clamshells on each side."],
         blocks: [{ name: "Legs and hips", items: [s, h] }, { name: "Push", items: [p] }, { name: "Core", items: [c] }],
-        notes: [REST_NOTE, PAIN_NOTE],
+        notes: [REST_NOTE, HIP_RANGE_NOTE, PAIN_NOTE],
       };
     }
     return {
       title: "Full-body strength", minutes: Ls >= 7 ? 40 : 35, location: "Home",
       why: "Builds strength for everything you want to do: running, carrying a pack, and holding a bow steady.",
-      warmup: ["March in place or walk on the treadmill for 3 minutes.", "10 arm circles forward and 10 backward.", "5 slow chair squats.", "5 slow cat-cows on your hands and knees."],
+      warmup: ["March in place or walk on the treadmill for 3 minutes.", "10 arm circles forward and 10 backward.", "8 side-lying clamshells on each side.", "5 slow box squats to the bench.", "5 slow cat-cows on your hands and knees."],
       blocks: [
         { name: "Legs", items: [squatItem(Ls), legItemA(Ls)] },
         { name: "Push and pull", items: [pushItem(Ls), rowItem(Lb, 2)] },
-        { name: "Hips and the back of your legs", items: [hingeItem(Ls)] },
+        { name: "Hips and the back of your legs", items: [hingeItem(Ls)].concat(Ls >= 6 ? [ex("singleLegBridge", { sets: 2, target: band(Ls - 5, [6, 8, 10]), perSide: "on each side" })] : []).concat(sideHipItems(Ls, false)) },
         { name: "Core and carry", items: coreItemsA(Ls).concat([carryItem(Ls)]) },
       ],
-      notes: [REST_NOTE, "Choose a weight or version where the last 2 reps of each set take effort but your form stays smooth.", PAIN_NOTE],
+      notes: [REST_NOTE, "Choose a weight or version where the last 2 reps of each set take effort but your form stays smooth.", HIP_RANGE_NOTE, PAIN_NOTE],
     };
   }
 
   function strengthBWorkout(variant) {
     const Ls = lvl("strength"), Lb = lvl("bow");
-    const bowPractice = bowPracticeItem();
-    const bandDraw = eq("bands") && Lb >= 4 && !bowPractice ? ex("bandDraw", { sets: 2, target: 6, perSide: "on each side" }) : null;
     if (variant === "short") {
-      const items = [bowPractice, rowItem(Lb), hangItems(Lb, false)[0], ytwItem(Lb), extRotItem(Lb)].filter(Boolean);
-      items.forEach(function (it) { if (it.key !== "bowDraw") it.sets = Math.min(it.sets, 2); });
+      const items = [rowItem(Lb), hangItems(Lb, false)[0], ytwItem(Lb), extRotItem(Lb)].filter(Boolean);
+      items.forEach(function (it) { it.sets = Math.min(it.sets, 2); });
       return {
         title: "Short back and shoulder session for your bow", minutes: 20, location: "Home",
         why: "The key moves for drawing your bow, in about 20 minutes.",
         warmup: ["10 arm circles each way.", "8 wall slides.", "8 shoulder blade squeezes, holding each for 3 seconds."],
-        blocks: [{ name: "Back and shoulders for your bow", items: items }, { name: "Core", items: [coreItemB(Ls)] }],
+        blocks: [{ name: "Back and shoulders for your bow", intro: bowWorkoutIntro(), items: items }, { name: "Core and side hips", items: [coreItemB(Ls)].concat(sideHipItems(Ls, false)) }],
         notes: [REST_NOTE, PAIN_NOTE],
       };
     }
-    const bowItems = [bowPractice, rowItem(Lb)].concat(hangItems(Lb, true)).concat([
+    const bowItems = [rowItem(Lb)].concat(hangItems(Lb, true)).concat([
       ytwItem(Lb), extRotItem(Lb), bentRowItem(Lb),
       eq("lightDumbbells") && Lb >= 3 ? ex("reverseFlyLight", { sets: 2, target: band(Lb - 2, [10, 10, 12]), weightDefault: 5 }) : null,
       eq("bands") ? ex("bandPullApart", { sets: 2, target: 12 }) : null,
       eq("bands") && Lb >= 4 ? ex("bandFacePull", { sets: 2, target: 12 }) : null,
-      bandDraw,
     ]).filter(Boolean);
-    const legItems = [legItemB(Ls), backItemB(Ls)];
+    const legItems = [legItemB(Ls), backItemB(Ls)].concat(sideHipItems(Ls, true));
     if (Ls >= 9 && eq("backExtBench")) legItems.push(ex("hamLower", { sets: 2, target: 3 }));
     const pressItems = [pressItem(Ls)];
     if (eq("lightDumbbells") && Ls >= 3) pressItems.push(ex("lateralRaise", { sets: 2, target: 10, weightDefault: 5 }));
-    const warm = ["Walk or march in place for 3 minutes.", "10 arm circles each way.", "8 wall slides.", "8 shoulder blade squeezes, holding each for 3 seconds."];
+    const warm = ["Walk or march in place for 3 minutes.", "10 arm circles each way.", "8 wall slides.", "8 shoulder blade squeezes, holding each for 3 seconds.", "8 standing hip hikes on each side (on flat ground)."];
     if (eq("bands")) warm.push("10 easy band pull-aparts.");
     return {
       title: "Back, shoulders and legs for your bow", minutes: Lb >= 7 ? 45 : 40, location: "Home",
       why: "Drawing a bow is mostly upper-back strength. This session builds it steadily, plus legs and core.",
       warmup: warm,
       blocks: [
-        { name: "Back and shoulders for your bow", intro: "These are the muscles that draw and hold a bow.", items: bowItems },
-        { name: "Legs", items: legItems },
+        { name: "Back and shoulders for your bow", intro: bowWorkoutIntro(), items: bowItems },
+        { name: "Legs and side hips", items: legItems },
         { name: "Press", items: pressItems },
         { name: "Core", items: [coreItemB(Ls)] },
       ],
-      notes: [REST_NOTE, "The small shoulder exercises (Y-T-W and rotations) tire quickly. That's normal, and they keep your shoulders happy for archery.", PAIN_NOTE],
+      notes: [REST_NOTE, "The small shoulder exercises (Y-T-W and rotations) tire quickly. That's normal, and they keep your shoulders happy for archery.", "The hip and core work matters for archery too: a steady, tall stance helps you control the draw.", HIP_RANGE_NOTE, PAIN_NOTE],
     };
   }
 
@@ -889,19 +918,19 @@
     const items = [];
     if (full) items.push(ex("easyWalk", { target: "10 minutes, relaxed" }));
     items.push(ex("catCow", { target: "8 slow rounds" }));
-    items.push(ex("childPose", { target: "5 slow breaths to each side" }));
+    items.push(ex("hipCircles", { target: "5 small circles each way, on each leg" }));
     items.push(ex("hipFlexor", { target: "Hold 30 seconds on each side" }));
+    if (full) items.push(ex("quadStretch", { target: "Hold 30 seconds on each side" }));
     if (full) items.push(ex("hamStretch", { target: "Hold 30 seconds on each side" }));
-    if (full) items.push(ex("calfStretch", { target: "Hold 30 seconds on each side" }));
-    if (full) items.push(ex("figure4", { target: "Hold 30 seconds on each side" }));
-    items.push(ex("doorwayStretch", { target: "Hold 30 seconds on each side" }));
-    items.push(ex("threadNeedle", { target: "5 slow breaths on each side" }));
+    items.push(ex("calfStretch", { target: "Hold 30 seconds on each side" }));
+    items.push(ex("thoracicRotation", { target: "5 slow turns each way" }));
+    if (full) items.push(ex("doorwayStretch", { target: "Hold 30 seconds on each side" }));
     return {
       title: full ? "Stretch and easy movement" : "Short stretch", minutes: full ? 25 : 12, location: "Home",
       why: "Gentle movement that helps you feel loose and recover. Nothing here should feel like hard work.",
       warmup: [],
       blocks: [{ name: full ? "Easy walk and stretches" : "Stretches", items: items }],
-      notes: ["Stretch to a mild, comfortable pull, never pain. Breathe slowly.", "A rest day with a stretch like this is a great day."],
+      notes: [HIP_RANGE_NOTE, "Stretch to a mild, comfortable pull, never pain, and breathe slowly. There's no need to push any stretch to its limit.", "A rest day with a stretch like this is a great day."],
     };
   }
 
@@ -1135,12 +1164,25 @@
   }
 
   const PILLAR_SHORT = { run: "Walk and jog", strength: "Strength", hike: "Hiking", bow: "Bow strength" };
-  function applyRating(p, rating) {
+  const HIP_PILLARS = ["run", "hike", "strength"]; // legs, running and hiking; the bow path is never affected by hips
+  function applyRating(p, rating, hips) {
     const st = levels[p] || (levels[p] = { level: 1, justRight: 0 });
     const max = PILLARS[p].max;
     const before = st.level;
     const name = PILLAR_SHORT[p];
     let msg;
+    const hipAffected = HIP_PILLARS.indexOf(p) >= 0 && (hips === "achy" || hips === "pinchy");
+    if (hipAffected && hips === "pinchy") {
+      st.level = Math.max(1, before - 1); st.justRight = 0;
+      msg = st.level < before
+        ? name + ": eases back a step next time, since your hips felt pinchy or sore."
+        : name + ": stays at the gentlest step, since your hips felt pinchy or sore.";
+      return { pillar: p, before: before, after: st.level, msg: msg };
+    }
+    if (hipAffected && hips === "achy" && rating !== "hard") {
+      msg = name + ": stays on the same step next time because your hips were a little achy. That's a smart way to let things settle.";
+      return { pillar: p, before: before, after: st.level, msg: msg };
+    }
     if (rating === "easy") {
       st.level = Math.min(max, before + 1); st.justRight = 0;
       msg = st.level > before ? name + ": next time steps up a little (" + stepText(p, st.level).toLowerCase() + ")." : name + ": you're at the top step, so keep enjoying it!";
@@ -1164,13 +1206,15 @@
     hard: "Thank you for being honest. Showing up is what counts.",
   };
 
-  function finishWorkout(rating) {
+  const HIPS_LABEL = { fine: "Fine", achy: "A little achy", pinchy: "Pinchy or sore" };
+  function finishWorkout(rating, hips) {
+    hips = hips || "fine";
     const s = week.activeSession;
     if (!s) return;
     const w = s.workout;
     const wi = weekInfo();
     const levelsBefore = clone(levels);
-    const changes = w.pillars.map(function (p) { return applyRating(p, rating); });
+    const changes = w.pillars.map(function (p) { return applyRating(p, rating, hips); });
     saveLevels();
     const found = extractRecords(s);
     const toasts = [];
@@ -1196,10 +1240,12 @@
     let msg = FEEL_LEAD[rating];
     if (changes.length) msg += " " + changes.map(function (c) { return c.msg; }).join(" ");
     else msg += w.slotId === "checkin" ? " Your numbers are saved in Progress." : " Stretch days stay easy on purpose.";
-    const h = { id: uid(), date: wi.todayKey, slotId: s.slotId, variant: s.variant, title: w.title, minutes: minutes, rating: rating, pillars: w.pillars, ts: Date.now() };
+    if (hips === "pinchy") msg += " Be kind to your hips for a day or two. " + PAIN_RULE;
+    else if (hips === "achy") msg += " A little achiness is common. Notice how your hips feel tomorrow morning.";
+    const h = { id: uid(), date: wi.todayKey, slotId: s.slotId, variant: s.variant, title: w.title, minutes: minutes, rating: rating, hips: hips, pillars: w.pillars, ts: Date.now() };
     history.push(h);
     saveHistory();
-    week.completed[s.slotId] = { dayKey: wi.todayKey, title: w.title, rating: rating, variant: s.variant, historyId: h.id, levelsBefore: levelsBefore, recordIds: recordIds, message: msg, minutes: minutes };
+    week.completed[s.slotId] = { dayKey: wi.todayKey, title: w.title, rating: rating, hips: hips, variant: s.variant, historyId: h.id, levelsBefore: levelsBefore, recordIds: recordIds, message: msg, minutes: minutes };
     if (s.slotId === "checkin") week.checkinDone = true;
     week.activeSession = null;
     saveWeek();
@@ -1371,7 +1417,7 @@
       $("today-sub").textContent = "Rest and recovery are part of the plan. See you next time!";
       const e = done.entry;
       h += '<div class="done-card"><span class="done-badge">Done ✓</span><h2>' + esc(e.title) + "</h2>" +
-        '<p class="done-feel">You said it felt: <strong>' + esc(FEEL_LABEL[e.rating] || "") + "</strong></p>" +
+        '<p class="done-feel">You said it felt: <strong>' + esc(FEEL_LABEL[e.rating] || "") + "</strong>" + (e.hips ? " · Hips: <strong>" + esc(HIPS_LABEL[e.hips] || "") + "</strong>" : "") + "</p>" +
         '<p class="done-msg">' + esc(e.message || "") + "</p>";
       const next = nextPlanned(p);
       if (next) h += '<p class="done-next">Next on your board: <strong>' + esc(next) + "</strong></p>";
@@ -1654,10 +1700,20 @@
   }
 
   // ——— Rating sheet ———
+  let ratingSel = null, hipsSel = null;
+  function updateRatingUi() {
+    document.querySelectorAll("#rating [data-rate]").forEach(function (b) { b.classList.toggle("on", b.dataset.rate === ratingSel); b.setAttribute("aria-pressed", b.dataset.rate === ratingSel ? "true" : "false"); });
+    document.querySelectorAll("#rating [data-hips]").forEach(function (b) { b.classList.toggle("on", b.dataset.hips === hipsSel); b.setAttribute("aria-pressed", b.dataset.hips === hipsSel ? "true" : "false"); });
+    const btn = $("btn-save-rating");
+    btn.disabled = !(ratingSel && hipsSel);
+    btn.textContent = ratingSel && hipsSel ? "Save workout" : "Choose both answers to save";
+  }
   function openRating() {
     const s = week.activeSession;
     if (!s) return;
     if (!sessionHasProgress(s) && !confirm("Nothing is checked off yet. Finish anyway?")) return;
+    ratingSel = null; hipsSel = null;
+    updateRatingUi();
     $("rating").classList.remove("hidden");
   }
   function closeRating() { $("rating").classList.add("hidden"); }
@@ -1760,7 +1816,7 @@
     h += '<section class="card"><h3>Recent workouts</h3>';
     if (!history.length) h += '<p class="empty">Your finished workouts will show up here.</p>';
     else h += '<ul class="history">' + history.slice(-15).reverse().map(function (x) {
-      return '<li><div><strong>' + esc(x.title) + "</strong><span>" + esc(shortDate(keyToDate(x.date))) + " · about " + Math.round(x.minutes) + ' min</span></div><span class="feel feel-' + x.rating + '">' + esc(FEEL_LABEL[x.rating] || "") + "</span></li>";
+      return '<li><div><strong>' + esc(x.title) + "</strong><span>" + esc(shortDate(keyToDate(x.date))) + " · about " + Math.round(x.minutes) + " min" + (x.hips ? " · Hips: " + esc((HIPS_LABEL[x.hips] || "").toLowerCase()) : "") + '</span></div><span class="feel feel-' + x.rating + '">' + esc(FEEL_LABEL[x.rating] || "") + "</span></li>";
     }).join("") + "</ul>";
     h += "</section>";
     $("progress-body").innerHTML = h;
@@ -1803,14 +1859,28 @@
       "<li><strong>Backcountry hiking:</strong> longer hikes, then a light pack, working toward multi-day trips.</li>" +
       "<li><strong>Drawing your bow:</strong> the back and shoulder strength to draw and hold your " + r.target + " lb bow.</li></ol></section>";
 
+    // About you + hips
+    h += '<section class="card"><h3>About you</h3><div class="about-grid">' +
+      '<label class="field"><span>Name</span><input type="text" value="' + esc(profile.name || "Casandra") + '" disabled /></label>' +
+      '<label class="field"><span>Age</span><input type="number" inputmode="numeric" min="16" max="99" id="pf-age" value="' + esc(profile.age || "") + '" /></label>' +
+      '<label class="field"><span>Bow type</span><select id="pf-bowtype"><option value="Compound"' + (isCompound() ? " selected" : "") + '>Compound</option><option value="Recurve"' + (!isCompound() ? " selected" : "") + ">Recurve</option></select></label>" +
+      '<label class="field"><span>Draw weight (lb)</span><input type="number" inputmode="numeric" min="10" max="80" id="pf-bowweight" value="' + esc(profile.bowWeight || 35) + '" /></label>' +
+      '</div><p class="form-msg" id="pf-msg"></p></section>';
+    h += '<section class="card note-card"><h3>Hips</h3><p>Two hip labrum repairs, more than a year out. The plan keeps squats to a box, skips deep hip stretches, and builds running and pack weight gradually.</p>' +
+      '<p class="card-intro">If your physical therapist gave you lasting limits, those come first. ' + esc(PAIN_RULE) + "</p>" +
+      '<p class="card-intro">After each workout you\'ll be asked how your hips felt. "A little achy" keeps your legs, running and hiking on the same step; "Pinchy or sore" eases them back a step. Your bow and upper-body path isn\'t affected.</p></section>';
+
     // Bow readiness
-    h += '<section class="card readiness"><p class="eyebrow">Bow draw readiness toward ' + r.target + ' lb</p>' +
+    h += '<section class="card readiness"><p class="eyebrow">Bow draw readiness toward ' + r.target + " lb (" + (isCompound() ? "compound" : "recurve") + " bow)</p>" +
       '<div class="ring-row"><div class="ring" style="--p:' + r.pct + '"><span>' + r.pct + '%</span></div><div><h3>' + esc(r.stage) + "</h3><p>" + r.met + " of " + r.markers.length + " markers reached.</p></div></div>";
     r.markers.forEach(function (m) {
       h += '<div class="marker' + (m.value >= m.target ? " met" : "") + '"><div class="marker-head"><span>' + esc(m.label) + "</span><span>" + (Math.round(m.value * 10) / 10) + " / " + m.target + " " + esc(m.unit) + (m.value >= m.target ? " ✓" : "") + '</span></div><div class="progress-bar small"><div class="progress-fill" style="width:' + Math.round(m.frac * 100) + '%"></div></div></div>';
     });
-    if (r.pct === 0) h += '<p class="card-intro"><strong>Everyone starts at zero.</strong> Your bow sessions and the gentle check-in fill these in automatically.</p>';
-    h += '<p class="card-intro">When 3 of the 4 markers are reached, short practice draws on your bow are added to your bow sessions. This is a guide based on common strength markers, not a guarantee; every body and every bow is different. Tips: never release a bow without an arrow, and if your bow\'s draw weight can be turned down, an archery shop can do that for now and check your draw length.</p></section>';
+    if (r.pct === 0) h += '<p class="card-intro"><strong>Everyone starts at zero.</strong> Your bow-strength sessions and the gentle check-in fill these in automatically.</p>';
+    if (r.ready) h += '<p class="ready-msg"><strong>Your strength markers say you\'re likely ready to try drawing your bow.</strong> When you\'re ready, have an archery shop check your draw length and set the draw weight, and start with a few smooth draws and slow let-downs.</p>';
+    h += '<p class="card-intro">' + esc(bowIntro()) + "</p>";
+    h += '<p class="card-intro">The workouts build that strength with rows, Y-T-W raises, shoulder rotations, hangs, grip and core work. There are no exercises with your bow inside the workouts. This tracker is a guide based on common strength markers, not a guarantee; every body and every bow is different.</p>';
+    h += '<p class="card-intro">' + (isCompound() ? "Most compound bows can be turned down, so an archery shop can set a lighter draw weight to start and check your draw length." : "If your bow's draw weight can be adjusted, an archery shop can set a lighter weight to start and check your draw length.") + " Never dry-fire a bow (release it without an arrow). Hips matter too: a stable, tall stance and a strong core help you control the draw.</p></section>";
 
     // Paths
     h += '<section class="card"><h3>Where you are on each path</h3><p class="card-intro">Each path moves up when a workout feels easy (or just right twice in a row), stays put when it\'s just right, and eases back when it feels too hard. You can nudge it yourself too.</p>';
@@ -1828,7 +1898,7 @@
     h += '</div><p class="field-hint">' + esc(daysExplainer(profile.trainingDays)) + "</p></section>";
 
     // Equipment
-    h += '<section class="card"><h3>Equipment</h3><p class="card-intro">Workouts swap exercises to match what you have. For example, turning on light dumbbells adds reverse flys and lateral raises, and turning on bands adds pull-aparts, face pulls and band draw practice.</p>';
+    h += '<section class="card"><h3>Equipment</h3><p class="card-intro">Workouts swap exercises to match what you have. For example, turning on light dumbbells adds reverse flys and lateral raises, and turning on bands adds pull-aparts, face pulls and band shoulder rotations.</p>';
     EQUIPMENT.forEach(function (e) {
       h += '<label class="toggle"><input type="checkbox" data-eq="' + e.id + '"' + (profile.equipment[e.id] ? " checked" : "") + " /><span>" + esc(e.label) + "</span></label>";
     });
@@ -1839,6 +1909,18 @@
     h += '<section class="card"><h3>Your data</h3><p class="card-intro">Everything is saved only in this browser on this device.</p><button type="button" class="btn-danger-ghost" id="btn-erase">Erase everything and start over</button></section>';
     $("goals-body").innerHTML = h;
 
+    const saveAbout = function () {
+      const age = parseInt($("pf-age").value, 10);
+      const bw = parseFloat($("pf-bowweight").value);
+      const msg = $("pf-msg");
+      if (!(age >= 16 && age <= 99)) { msg.textContent = "Age should be a number between 16 and 99."; msg.className = "form-msg err"; return; }
+      if (!(bw >= 10 && bw <= 80)) { msg.textContent = "Draw weight should be between 10 and 80 lb."; msg.className = "form-msg err"; return; }
+      profile.age = age; profile.bowWeight = bw; profile.bowType = $("pf-bowtype").value === "Recurve" ? "Recurve" : "Compound";
+      saveProfile();
+      render();
+      const m2 = $("pf-msg"); if (m2) { m2.textContent = "Saved."; m2.className = "form-msg"; }
+    };
+    ["pf-age", "pf-bowweight", "pf-bowtype"].forEach(function (id) { $(id).addEventListener("change", saveAbout); });
     $("goals-body").querySelectorAll("[data-level]").forEach(function (b) {
       b.addEventListener("click", function () {
         const p = b.dataset.level;
@@ -1884,7 +1966,11 @@
 
   // ——— Guard rails: no banned equipment / jargon in the built workouts ———
   function assertCleanContent() {
-    const banned = [/kettlebell/i, /cable/i, /ab wheel/i, /landmine/i, /med(icine)? ball/i, /\bexpress\b/i, /\bblast\b/i, /back-to-back/i, /1RM/, /\bRPE\b/, /\bday 2\b/i];
+    const banned = [/kettlebell/i, /cable/i, /ab wheel/i, /landmine/i, /med(icine)? ball/i, /\bexpress\b/i, /\bblast\b/i, /back-to-back/i, /1RM/, /\bRPE\b/, /\bday 2\b/i,
+      // Hip-friendly rules: no deep squats or forced end-range hip stretches
+      /pigeon/i, /figure-four/i, /figure 4/i, /child's pose/i, /knee-to-chest/i, /goblet/i, /deep squat/i, /walking lunge/i, /chair squat/i, /mid-shin/i, /toward your heels/i,
+      // No exercises with the actual bow (or band draw practice) inside workouts
+      /practice draw/i, /band draw/i, /nocked/i, /dry.?fir/i, /full draw/i, /on your bow/i];
     if (!eq("bands")) banned.push(/\bband\b/i);
     const problems = [];
     Object.keys(SLOTS).forEach(function (sid) {
@@ -1915,7 +2001,10 @@
     $("btn-finish").addEventListener("click", openRating);
     $("rating").addEventListener("click", function (e) {
       const r = e.target.closest("[data-rate]");
-      if (r) { finishWorkout(r.dataset.rate); return; }
+      if (r) { ratingSel = r.dataset.rate; updateRatingUi(); return; }
+      const hp = e.target.closest("[data-hips]");
+      if (hp) { hipsSel = hp.dataset.hips; updateRatingUi(); return; }
+      if (e.target.closest("#btn-save-rating")) { if (ratingSel && hipsSel) finishWorkout(ratingSel, hipsSel); return; }
       if (e.target.closest("[data-close-rating]")) closeRating();
     });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeDetail(); closeRating(); } });

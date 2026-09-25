@@ -193,6 +193,7 @@ h4 { margin: 0 0 10px; font-size: 16px; }
 .sheet-body { padding-bottom: 12px; }
 .sheet-foot { position: sticky; bottom: 0; padding: 12px 0 calc(16px + env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--bg) 75%, rgba(251,246,239,0)); }
 .rating-sheet { padding-bottom: calc(18px + env(safe-area-inset-bottom)); text-align: center; }
+.rating-sheet .rate-btns, .rating-sheet .hips-btns { text-align: left; }
 .rating-sheet h2 { margin-top: 6px; }
 .rate-btns { display: flex; flex-direction: column; gap: 10px; margin: 16px 0 8px; }
 .rate-btn {
@@ -202,9 +203,19 @@ h4 { margin: 0 0 10px; font-size: 16px; }
 .rate-btn strong { display: block; font-size: 17px; }
 .rate-btn em { display: block; font-style: normal; color: var(--muted); font-size: 14px; }
 .rate-emoji { font-size: 28px; }
-.rate-btn[data-rate="easy"]:active { background: var(--sage-soft); }
-.rate-btn[data-rate="right"]:active { background: var(--accent-soft); }
-.rate-btn[data-rate="hard"]:active { background: var(--sky-soft); }
+.rate-btn.on { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 2px var(--accent-soft); }
+.rate-btns { margin-bottom: 14px; }
+.rate-btn { min-height: 64px; }
+.hips-q { margin: 6px 0 10px; font-size: 18px; }
+.hips-btns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+.hips-btn { min-height: 56px; padding: 8px 6px; border-radius: 14px; border: 1.5px solid var(--border); background: #fff; font-weight: 700; font-size: 14.5px; line-height: 1.2; }
+.hips-btn.on[data-hips="fine"] { background: var(--sage-soft); border-color: var(--sage); color: var(--sage-dark); }
+.hips-btn.on[data-hips="achy"] { background: var(--sun-soft); border-color: #e2bf5f; color: #7a5b12; }
+.hips-btn.on[data-hips="pinchy"] { background: var(--sky-soft); border-color: #7c9cbc; color: #3f5f80; }
+#btn-save-rating { margin-bottom: 6px; }
+.hips-chip { display: inline-block; margin-top: 2px; font-size: 12.5px; color: var(--muted); }
+.note-card { background: #fbfaf6; }
+.about-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 
 /* Active workout */
 .active-chrome { display: flex; align-items: center; justify-content: space-between; padding: calc(8px + env(safe-area-inset-top)) 0 0; }
@@ -389,3 +400,5 @@ h4 { margin: 0 0 10px; font-size: 16px; }
 @media (min-width: 700px) {
   #app { padding-top: 10px; }
 }
+
+.ready-msg { background: var(--sage-soft); border: 1.5px solid #cfe3d4; border-radius: 14px; padding: 12px 14px; margin: 4px 0 12px; font-size: 15px; }

@@ -8,7 +8,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23e59a73'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-family='Arial,sans-serif' font-size='30' font-weight='700' fill='%23fffaf4'%3EC%3C/text%3E%3C/svg%3E" />
   <title>Casandra's Coach</title>
-  <link rel="stylesheet" href="styles.css?v=1790371281" />
+  <link rel="stylesheet" href="styles.css?v=1790374872" />
 </head>
 <body>
   <div id="app">
@@ -110,11 +110,18 @@
         <div class="sheet-handle"></div>
         <h2 id="rating-title">How did that feel?</h2>
         <p class="sheet-meta">There's no wrong answer. This decides what next time looks like.</p>
-        <div class="rate-btns">
+        <div class="rate-btns" role="group" aria-label="How did that feel?">
           <button type="button" class="rate-btn" data-rate="easy"><span class="rate-emoji">😊</span><span><strong>Easy</strong><em>I could have done more. Step it up a little.</em></span></button>
           <button type="button" class="rate-btn" data-rate="right"><span class="rate-emoji">👍</span><span><strong>Just right</strong><em>Good effort. Keep it about the same.</em></span></button>
           <button type="button" class="rate-btn" data-rate="hard"><span class="rate-emoji">😮‍💨</span><span><strong>Too hard</strong><em>That was a lot. Ease back next time.</em></span></button>
         </div>
+        <h3 class="hips-q">How did your hips feel?</h3>
+        <div class="hips-btns" role="group" aria-label="How did your hips feel?">
+          <button type="button" class="hips-btn" data-hips="fine">Fine</button>
+          <button type="button" class="hips-btn" data-hips="achy">A little achy</button>
+          <button type="button" class="hips-btn" data-hips="pinchy">Pinchy or sore</button>
+        </div>
+        <button type="button" id="btn-save-rating" class="btn-primary" disabled>Choose both answers to save</button>
         <button type="button" class="btn-text" data-close-rating>Back to the workout</button>
       </div>
     </div>
@@ -123,6 +130,6 @@
       <div class="toast-inner"><span class="toast-label" id="toast-label">🎉</span><p id="toast-msg"></p></div>
     </div>
   </div>
-  <script src="app.js?v=1790371281"></script>
+  <script src="app.js?v=1790374872"></script>
 </body>
 </html>
