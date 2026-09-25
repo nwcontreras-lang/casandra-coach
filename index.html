@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#fbf6ef" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23e59a73'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-family='Arial,sans-serif' font-size='30' font-weight='700' fill='%23fffaf4'%3EC%3C/text%3E%3C/svg%3E" />
+  <title>Casandra's Coach</title>
+  <link rel="stylesheet" href="styles.css?v=1790371281" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <div class="brand-text">
+          <strong>Casandra's Coach</strong>
+          <span id="week-label">Week 1</span>
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" class="tab active" data-view="today" role="tab" aria-selected="true">Today</button>
+      <button type="button" class="tab" data-view="week" role="tab" aria-selected="false">Week</button>
+      <button type="button" class="tab" data-view="progress" role="tab" aria-selected="false">Progress</button>
+      <button type="button" class="tab" data-view="goals" role="tab" aria-selected="false">Goals</button>
+    </nav>
+
+    <main id="main">
+      <section id="view-today" class="view" aria-label="Today">
+        <div class="hero">
+          <p class="eyebrow" id="today-date"></p>
+          <h1 id="today-title">Pick today's workout</h1>
+          <p class="sub" id="today-sub"></p>
+        </div>
+        <div id="today-body"></div>
+      </section>
+
+      <section id="view-week" class="view" aria-label="Week board" hidden>
+        <div class="hero">
+          <p class="eyebrow">Week board</p>
+          <h1>This week</h1>
+          <p class="sub">Your plan for the week. It rearranges itself around whatever you actually do.</p>
+        </div>
+        <div id="week-body"></div>
+      </section>
+
+      <section id="view-progress" class="view" aria-label="Progress" hidden>
+        <div class="hero">
+          <p class="eyebrow">Progress</p>
+          <h1>Look how far you've come</h1>
+          <p class="sub">Your workouts, personal bests and check-ins.</p>
+        </div>
+        <div id="progress-body"></div>
+      </section>
+
+      <section id="view-goals" class="view" aria-label="Goals" hidden>
+        <div class="hero">
+          <p class="eyebrow">Goals</p>
+          <h1>Casandra's goals</h1>
+          <p class="sub">Running, strength, backcountry hiking, and drawing your bow.</p>
+        </div>
+        <div id="goals-body"></div>
+      </section>
+    </main>
+
+    <section id="view-active" class="active-view" aria-label="Workout in progress" hidden>
+      <div class="active-chrome">
+        <button type="button" id="btn-active-back" class="btn-text">← Today</button>
+        <span class="live-pill">In progress</span>
+        <button type="button" id="btn-active-abandon" class="btn-text danger">Stop</button>
+      </div>
+      <div class="hero">
+        <p class="eyebrow" id="active-eyebrow"></p>
+        <h1 id="active-title"></h1>
+        <p class="sub" id="active-meta"></p>
+        <p class="active-progress" id="active-progress"></p>
+      </div>
+      <div id="active-body"></div>
+      <div class="active-footer">
+        <button type="button" id="btn-finish" class="btn-primary">Finish workout</button>
+      </div>
+    </section>
+
+    <div id="detail" class="sheet-wrap hidden" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+      <div class="sheet-backdrop" data-close></div>
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <header class="sheet-head">
+          <div>
+            <p class="eyebrow" id="detail-eyebrow"></p>
+            <h2 id="detail-title"></h2>
+            <p class="sheet-meta" id="detail-meta"></p>
+          </div>
+          <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+        </header>
+        <div id="detail-body" class="sheet-body"></div>
+        <footer class="sheet-foot">
+          <button type="button" id="btn-start" class="btn-primary">Start this workout</button>
+        </footer>
+      </div>
+    </div>
+
+    <div id="rating" class="sheet-wrap hidden" role="dialog" aria-modal="true" aria-labelledby="rating-title">
+      <div class="sheet-backdrop" data-close-rating></div>
+      <div class="sheet rating-sheet">
+        <div class="sheet-handle"></div>
+        <h2 id="rating-title">How did that feel?</h2>
+        <p class="sheet-meta">There's no wrong answer. This decides what next time looks like.</p>
+        <div class="rate-btns">
+          <button type="button" class="rate-btn" data-rate="easy"><span class="rate-emoji">😊</span><span><strong>Easy</strong><em>I could have done more. Step it up a little.</em></span></button>
+          <button type="button" class="rate-btn" data-rate="right"><span class="rate-emoji">👍</span><span><strong>Just right</strong><em>Good effort. Keep it about the same.</em></span></button>
+          <button type="button" class="rate-btn" data-rate="hard"><span class="rate-emoji">😮‍💨</span><span><strong>Too hard</strong><em>That was a lot. Ease back next time.</em></span></button>
+        </div>
+        <button type="button" class="btn-text" data-close-rating>Back to the workout</button>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite">
+      <div class="toast-inner"><span class="toast-label" id="toast-label">🎉</span><p id="toast-msg"></p></div>
+    </div>
+  </div>
+  <script src="app.js?v=1790371281"></script>
+</body>
+</html>
