@@ -1076,7 +1076,31 @@
     return list.slice(0, 3);
   }
 
+  // ——— In-app confirm (native confirm() is silently blocked in many in-app browsers and home-screen modes) ———
+  let confirmResolve = null;
+  function askConfirm(o) {
+    return new Promise(function (resolve) {
+      if (confirmResolve) { const prev = confirmResolve; confirmResolve = null; prev(false); }
+      confirmResolve = resolve;
+      $("confirm-title").textContent = o.title || "Are you sure?";
+      $("confirm-body").textContent = o.body || "";
+      $("confirm-ok").textContent = o.ok || "Yes";
+      $("confirm-cancel").textContent = o.cancel || "Cancel";
+      $("confirm-ok").classList.toggle("danger", !!o.danger);
+      $("confirm").classList.remove("hidden");
+      try { $("confirm-ok").focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+    });
+  }
+  function closeConfirm(val) {
+    $("confirm").classList.add("hidden");
+    const r = confirmResolve;
+    confirmResolve = null;
+    if (r) r(val);
+  }
+  function confirmOpen() { return !$("confirm").classList.contains("hidden"); }
+
   // ——— Active session ———
+  function sessionIsToday(s) { return !!s && s.dayKey === weekInfo().todayKey; }
   function initLogs(w) {
     const logs = {};
     w.blocks.forEach(function (b) {
@@ -1119,13 +1143,14 @@
     });
   }
 
-  function startWorkout(slotId, variant) {
+  async function startWorkout(slotId, variant) {
     const w = weekInfo();
     const cur = week.activeSession;
-    if (cur && !(cur.slotId === slotId && cur.variant === variant)) {
-      if (sessionHasProgress(cur) && !confirm("You've already logged some of \"" + cur.workout.title + "\". Switch workouts and lose that?")) return;
+    if (cur && sessionIsToday(cur) && cur.slotId === slotId && cur.variant === variant) { closeDetail(); showActive(); return; }
+    if (cur && sessionHasProgress(cur)) {
+      const ok = await askConfirm({ title: "Switch workouts?", body: "You've already logged some of \"" + cur.workout.title + "\". Switching clears that and starts the new one.", ok: "Switch workouts", cancel: "Keep the current one", danger: true });
+      if (!ok) return;
     }
-    if (cur && cur.slotId === slotId && cur.variant === variant) { showActive(); return; }
     const workout = buildWorkout(slotId, variant);
     week.activeSession = {
       slotId: slotId, variant: variant, dayKey: w.todayKey, startedAt: Date.now(),
@@ -1264,10 +1289,11 @@
     return id ? { slotId: id, entry: week.completed[id] } : null;
   }
 
-  function undoToday() {
+  async function undoToday() {
     const c = todaysCompletion();
     if (!c) return;
-    if (!confirm("Undo \"" + c.entry.title + "\" for today? Your levels go back to how they were before it, and you can pick again.")) return;
+    const ok = await askConfirm({ title: "Undo today's workout?", body: "\"" + c.entry.title + "\" will be removed for today. Your levels go back to how they were before it, and you can pick again.", ok: "Undo today", cancel: "Keep it" });
+    if (!ok) return;
     if (c.entry.levelsBefore) { levels = Object.assign(defaultLevels(), c.entry.levelsBefore); saveLevels(); }
     history = history.filter(function (h) { return h.id !== c.entry.historyId; });
     saveHistory();
@@ -1281,21 +1307,34 @@
     render();
   }
 
-  function abandonWorkout() {
-    const s = week.activeSession;
-    if (!s) return;
-    if (sessionHasProgress(s) && !confirm("Stop this workout without saving it? What you've logged so far will be cleared.")) return;
-    if (!sessionHasProgress(s) && !confirm("Leave this workout? You can pick any workout again from Today.")) return;
+  // Fully clears the in-progress workout (storage included) and returns to Today.
+  function endActiveSession() {
     week.activeSession = null;
     saveWeek();
     stopTicker();
+    closeRating();
+    closeDetail();
     hideActive();
     setTab("today");
     render();
   }
+  async function abandonWorkout() {
+    const s = week.activeSession;
+    if (!s) { endActiveSession(); return; }
+    const had = sessionHasProgress(s);
+    const ok = await askConfirm({
+      title: "Stop this workout?",
+      body: had ? "What you've logged in \"" + s.workout.title + "\" won't be saved. You can pick any workout again from Today." : "Nothing will be saved. You can pick any workout again from Today.",
+      ok: "Stop and leave without saving", cancel: "Keep going", danger: true,
+    });
+    if (!ok) return;
+    endActiveSession();
+    showToasts(["Workout stopped. Nothing was saved, and that's completely okay."]);
+  }
 
-  function resetWeek() {
-    if (!confirm("Reset this week? This clears this week's check-marks so the board starts fresh. Your levels, history and personal bests stay.")) return;
+  async function resetWeek() {
+    const ok = await askConfirm({ title: "Reset this week?", body: "This clears this week's check-marks so the board starts fresh. Your levels, history and personal bests stay.", ok: "Reset this week", cancel: "Cancel", danger: true });
+    if (!ok) return;
     week = defaultWeek();
     saveWeek();
     stopTicker();
@@ -1429,7 +1468,14 @@
     if (act) {
       const pr = sessionProgress(act);
       h += '<div class="continue-card"><p class="eyebrow">In progress</p><h2>' + esc(act.workout.title) + "</h2><p>" + pr.done + " of " + pr.total + " exercises checked off.</p>" +
-        '<button type="button" class="btn-primary" id="btn-continue">Continue workout</button></div>';
+        '<div class="continue-actions"><button type="button" class="btn-primary" id="btn-continue">Continue workout</button>' +
+        '<button type="button" class="btn-leave" id="btn-leave-today">Stop this workout (leave without saving)</button></div></div>';
+    }
+    const stale = week.activeSession && !sessionIsToday(week.activeSession) ? week.activeSession : null;
+    if (stale) {
+      h += '<div class="continue-card"><p class="eyebrow">Unfinished from ' + esc(longDate(keyToDate(stale.dayKey))) + "</p><h2>" + esc(stale.workout.title) + "</h2><p>It wasn't finished that day. You can leave it without saving, or open it to look back at it.</p>" +
+        '<div class="continue-actions"><button type="button" class="btn-primary" id="btn-leave-stale">Leave it without saving</button>' +
+        '<button type="button" class="btn-ghost" id="btn-open-stale">Open it</button></div></div>';
     }
     const t = p.byDay[w.todayKey];
     if (w.headStart) {
@@ -1456,6 +1502,12 @@
     body.innerHTML = h;
     const c = $("btn-continue");
     if (c) c.addEventListener("click", function () { if (week.activeSession) showActive(); });
+    const lt = $("btn-leave-today");
+    if (lt) lt.addEventListener("click", abandonWorkout);
+    const ls = $("btn-leave-stale");
+    if (ls) ls.addEventListener("click", function () { endActiveSession(); showToasts(["Cleared. Pick anything you like for today."]); });
+    const os = $("btn-open-stale");
+    if (os) os.addEventListener("click", function () { if (week.activeSession) showActive(); });
   }
 
   function nextPlanned(p) {
@@ -1645,7 +1697,7 @@
       o.start(); o.stop(audioCtx.currentTime + 0.25);
     } catch (e) { /* ignore */ }
   }
-  function timerAction(a) {
+  async function timerAction(a) {
     const s = week.activeSession;
     const it = findIntervalItem(s);
     if (!it) return;
@@ -1656,8 +1708,9 @@
     } else if (a === "timer-pause") {
       s.timer.elapsed += Date.now() - s.timer.startedAt; s.timer.running = false;
     } else if (a === "timer-reset") {
-      if (!confirm("Reset the timer to the start?")) return;
-      s.timer = null;
+      const ok = await askConfirm({ title: "Reset the timer?", body: "The timer goes back to the start. Rounds you've checked off stay checked.", ok: "Reset timer", cancel: "Cancel" });
+      if (!ok || !week.activeSession) return;
+      week.activeSession.timer = null;
     }
     lastPhaseIdx = -1;
     saveWeek();
@@ -1708,10 +1761,13 @@
     btn.disabled = !(ratingSel && hipsSel);
     btn.textContent = ratingSel && hipsSel ? "Save workout" : "Choose both answers to save";
   }
-  function openRating() {
+  async function openRating() {
     const s = week.activeSession;
     if (!s) return;
-    if (!sessionHasProgress(s) && !confirm("Nothing is checked off yet. Finish anyway?")) return;
+    if (!sessionHasProgress(s)) {
+      const ok = await askConfirm({ title: "Finish this workout?", body: "Nothing is checked off yet. You can still finish and save it, or go back and tick things off.", ok: "Yes, finish", cancel: "Back to the workout" });
+      if (!ok || !week.activeSession) return;
+    }
     ratingSel = null; hipsSel = null;
     updateRatingUi();
     $("rating").classList.remove("hidden");
@@ -1838,8 +1894,8 @@
       renderGoals();
     });
     $("progress-body").querySelectorAll("[data-del-rec]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        if (!confirm("Delete this entry?")) return;
+      b.addEventListener("click", async function () {
+        if (!(await askConfirm({ title: "Delete this entry?", body: "This personal-best entry will be removed.", ok: "Delete", cancel: "Keep it", danger: true }))) return;
         const m = b.dataset.delRec;
         records[m] = (records[m] || []).filter(function (e) { return e.id !== b.dataset.id; });
         saveRecords();
@@ -1936,8 +1992,8 @@
     $("goals-body").querySelectorAll("[data-eq]").forEach(function (c) {
       c.addEventListener("change", function () { profile.equipment[c.dataset.eq] = c.checked; saveProfile(); render(); });
     });
-    $("btn-erase").addEventListener("click", function () {
-      if (!confirm("Erase all workouts, levels and personal bests on this device? This can't be undone.")) return;
+    $("btn-erase").addEventListener("click", async function () {
+      if (!(await askConfirm({ title: "Erase everything?", body: "All workouts, levels and personal bests on this device will be erased. This can't be undone.", ok: "Erase everything", cancel: "Cancel", danger: true }))) return;
       Object.keys(KEYS).forEach(function (k) { localStorage.removeItem(KEYS[k]); });
       location.reload();
     });
@@ -1999,6 +2055,9 @@
     $("btn-active-back").addEventListener("click", function () { hideActive(); setTab("today"); render(); });
     $("btn-active-abandon").addEventListener("click", abandonWorkout);
     $("btn-finish").addEventListener("click", openRating);
+    $("btn-leave").addEventListener("click", abandonWorkout);
+    $("confirm-ok").addEventListener("click", function () { closeConfirm(true); });
+    $("confirm").addEventListener("click", function (e) { if (e.target.closest("[data-confirm-cancel]")) closeConfirm(false); });
     $("rating").addEventListener("click", function (e) {
       const r = e.target.closest("[data-rate]");
       if (r) { ratingSel = r.dataset.rate; updateRatingUi(); return; }
@@ -2007,7 +2066,11 @@
       if (e.target.closest("#btn-save-rating")) { if (ratingSel && hipsSel) finishWorkout(ratingSel, hipsSel); return; }
       if (e.target.closest("[data-close-rating]")) closeRating();
     });
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeDetail(); closeRating(); } });
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      if (confirmOpen()) { closeConfirm(false); return; }
+      closeDetail(); closeRating();
+    });
     // Week rolls over at midnight: re-render when the app comes back into view
     document.addEventListener("visibilitychange", function () {
       if (document.visibilityState !== "visible") return;
@@ -2019,7 +2082,7 @@
   bind();
   render();
   setTab("today");
-  if (week.activeSession) showActive();
+  if (week.activeSession && sessionIsToday(week.activeSession)) showActive();
   assertCleanContent();
 
   // Small hook for local testing in the console
